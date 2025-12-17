@@ -1,0 +1,9 @@
+# ninja log v5
+0	184	1765979404975883762	soundfft_autogen/timestamp	5ae73330c7b75519
+0	184	1765979404975883762	soundfft_autogen/mocs_compilation.cpp	5ae73330c7b75519
+0	184	1765979404975883762	/home/michel/Projects/soundfft/build/Desktop_Qt_6_2_4_GCC_64bit-Debug/soundfft_autogen/timestamp	5ae73330c7b75519
+0	184	1765979404975883762	/home/michel/Projects/soundfft/build/Desktop_Qt_6_2_4_GCC_64bit-Debug/soundfft_autogen/mocs_compilation.cpp	5ae73330c7b75519
+184	1374	1765979406167708863	CMakeFiles/soundfft.dir/soundfft_autogen/mocs_compilation.cpp.o	23635526517b91e6
+184	1543	1765979406336684153	CMakeFiles/soundfft.dir/main.cpp.o	60dd6e5a8195e5f
+184	1597	1765979406390676257	CMakeFiles/soundfft.dir/mainwindow.cpp.o	aeb78a294d125542
+1597	1923	1765979406714628883	soundfft	7f9551645b68429b
