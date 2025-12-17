@@ -14,3 +14,9 @@
 18	34	1765987843273315847	CMakeFiles/soundfft.dir/qcustomplot.cpp.o	17b9539c7720a891
 18	1425	1765987844663304776	CMakeFiles/soundfft.dir/mainwindow.cpp.o	aeb78a294d125542
 1425	1766	1765987844999302101	soundfft	c623ddec0895fd28
+1	17	1765990262673520306	soundfft_autogen/timestamp	5ae73330c7b75519
+1	17	1765990262673520306	soundfft_autogen/mocs_compilation.cpp	5ae73330c7b75519
+1	17	1765990262673520306	/home/michel/Projects/soundfft/build/Desktop_Qt_6_2_4_GCC_64bit-Debug/soundfft_autogen/timestamp	5ae73330c7b75519
+1	17	1765990262673520306	/home/michel/Projects/soundfft/build/Desktop_Qt_6_2_4_GCC_64bit-Debug/soundfft_autogen/mocs_compilation.cpp	5ae73330c7b75519
+19	1551	1765990264207534882	CMakeFiles/soundfft.dir/mainwindow.cpp.o	aeb78a294d125542
+1551	1872	1765990264525537902	soundfft	c623ddec0895fd28
