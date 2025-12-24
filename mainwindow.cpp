@@ -4,7 +4,6 @@
 
 MainWindow::MainWindow(QWidget * /* parent */)
 {
-
     createActions();
     createStatusBar();
 
@@ -12,6 +11,15 @@ MainWindow::MainWindow(QWidget * /* parent */)
 
     setCurrentFile(QString());
     setUnifiedTitleAndToolBarOnMac(true);
+}
+
+MainWindow::~MainWindow() {
+    if (m_sndFile != NULL) {
+        // Close any previously opened file
+        sf_close(m_sndFile);
+        m_sndFile = NULL;
+        m_sfInfo = {0};
+    }
 }
 
 void MainWindow::open()
@@ -36,9 +44,9 @@ void MainWindow::createActions()
     QToolBar *fileToolBar = addToolBar("File");
 
     const QIcon openIcon = QIcon::fromTheme("document-open", QIcon(":/images/open.png"));
-    QAction *openAct = new QAction(openIcon, tr("&Open..."), this);
+    QAction *openAct = new QAction(openIcon, "&Open...", this);
     openAct->setShortcuts(QKeySequence::Open);
-    openAct->setStatusTip(tr("Open an existing file"));
+    openAct->setStatusTip("Open an existing file");
     connect(openAct, &QAction::triggered, this, &MainWindow::open);
     fileMenu->addAction(openAct);
     fileToolBar->addAction(openAct);
@@ -46,22 +54,22 @@ void MainWindow::createActions()
     fileMenu->addSeparator();
 
     const QIcon exitIcon = QIcon::fromTheme("application-exit");
-    QAction *exitAct = fileMenu->addAction(exitIcon, tr("E&xit"), this, &QWidget::close);
+    QAction *exitAct = fileMenu->addAction(exitIcon, "E&xit", this, &QWidget::close);
     exitAct->setShortcuts(QKeySequence::Quit);
-    exitAct->setStatusTip(tr("Exit the application"));
+    exitAct->setStatusTip("Exit the application");
 
-    QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
-    QAction *aboutAct = helpMenu->addAction(tr("&About"), this, &MainWindow::about);
-    aboutAct->setStatusTip(tr("Show the application's About box"));
+    QMenu *helpMenu = menuBar()->addMenu("&Help");
+    QAction *aboutAct = helpMenu->addAction("&About", this, &MainWindow::about);
+    aboutAct->setStatusTip("Show the application's About box");
 
-    QAction *aboutQtAct = helpMenu->addAction(tr("About &Qt"), qApp, &QApplication::aboutQt);
-    aboutQtAct->setStatusTip(tr("Show the Qt library's About box"));
+    QAction *aboutQtAct = helpMenu->addAction("About &Qt", qApp, &QApplication::aboutQt);
+    aboutQtAct->setStatusTip("Show the Qt library's About box");
 
 }
 
 void MainWindow::createStatusBar()
 {
-    statusBar()->showMessage(tr("Ready"));
+    statusBar()->showMessage("Ready");
 }
 
 void MainWindow::readSettings()
@@ -86,20 +94,41 @@ void MainWindow::writeSettings()
 
 void MainWindow::loadFile(const QString &fileName)
 {
-    QFile file(fileName);
-    if (!file.open(QFile::ReadOnly | QFile::Text)) {
+    SF_INFO sfInfo;
+    sfInfo.format = 0;
+    QByteArray byteArray = fileName.toUtf8();
+    const char* c_filename = byteArray.constData();
+    SNDFILE *sndFile = sf_open(c_filename, SFM_READ, &sfInfo);
+    if (sndFile == NULL) {
         QMessageBox::warning(this, "Application",
             "Cannot read file " + fileName + ":\n" +
-            file.errorString());
+            sf_strerror(NULL));
+        return;
     }
 
-    QTextStream in(&file);
-    QGuiApplication::setOverrideCursor(Qt::WaitCursor);
-    // textEdit->setPlainText(in.readAll());
-    QGuiApplication::restoreOverrideCursor();
+    // QTextStream in(&file);
+    // QGuiApplication::setOverrideCursor(Qt::WaitCursor);
+    // // textEdit->setPlainText(in.readAll());
+    // QGuiApplication::restoreOverrideCursor();
 
+    if (m_sndFile != NULL) {
+        // Close any previously opened file
+        sf_close(m_sndFile);
+        m_sndFile = NULL;
+        m_sfInfo = {0};
+    }
+    m_sndFile = sndFile;
+    m_sfInfo = sfInfo;
     setCurrentFile(fileName);
-    statusBar()->showMessage(tr("File loaded"), 2000);
+
+    QString f_string = "frames: " + QString::number(sfInfo.frames) + "\n" +
+                       "samplerate: " + QString::number(sfInfo.samplerate) + "\n" +
+                       "channels: " + QString::number(sfInfo.channels) + "\n" +
+                       "format: 0x" + QString::number(sfInfo.format, 16) + "\n" +
+                       "sections: " + QString::number(sfInfo.sections) + "\n" +
+                       "seekable: " + QString::number(sfInfo.seekable) + "\n";
+    QMessageBox::information(this, "Application", f_string);
+    statusBar()->showMessage("File loaded", 2000);
 }
 
 void MainWindow::setCurrentFile(const QString &fileName)
@@ -117,9 +146,4 @@ void MainWindow::setCurrentFile(const QString &fileName)
 QString MainWindow::strippedName(const QString &fullFileName)
 {
     return QFileInfo(fullFileName).fileName();
-}
-
-MainWindow::~MainWindow()
-{
-
 }
