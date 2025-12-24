@@ -89,9 +89,8 @@ void MainWindow::loadFile(const QString &fileName)
     QFile file(fileName);
     if (!file.open(QFile::ReadOnly | QFile::Text)) {
         QMessageBox::warning(this, "Application",
-            "Cannot read file %1:\n%2.",
-            fileName, file.errorString());
-        return;
+            "Cannot read file " + fileName + ":\n" +
+            file.errorString());
     }
 
     QTextStream in(&file);
