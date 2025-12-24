@@ -1,4 +1,5 @@
 #include <QtWidgets>
+#include <iomanip>
 #include <iostream>
 
 #include "mainwindow.h"
@@ -134,6 +135,11 @@ void MainWindow::loadFile(const QString &fileName)
     long N = samples.size();
     std::cout << "Read " << N << " frames at " << sfInfo.samplerate << " Hz" << std::endl;
 
+    long long minutes = N / sfInfo.samplerate / 60; // Total minutes
+    long long seconds = N / sfInfo.samplerate % 60; // Remaining seconds
+    std::cout << "Duration: " << std::setfill('0') <<
+        minutes << ":" << std::setw(2) << seconds << std::endl;
+
     // FFTW works best with sizes that are products of small factors. The full file size might not be optimal,
     // but we use it for simplicity here. In a real application, you might use an optimal size like 1024 or 2048.
     // Ensure data is aligned for optimal performance.
@@ -151,7 +157,7 @@ void MainWindow::loadFile(const QString &fileName)
 
     // Execute the plan
     fftw_execute(p);
-    std::cout << "\nFrequency Magnitudes (first " << N/2 << " bins):" << std::endl;
+    // std::cout << "\nFrequency Magnitudes (first " << N/2 << " bins):" << std::endl;
 
     // The output array `out` contains complex frequency data. We calculate the magnitude
     // (sqrt(real^2 + imag^2)).
@@ -163,7 +169,7 @@ void MainWindow::loadFile(const QString &fileName)
         double magnitude = std::sqrt((real * real) + (imag * imag));
 
         // The frequency for this bin (Hz)
-        double frequency_hz = (double)i * sfInfo.samplerate / N;
+        // double frequency_hz = (double)i * sfInfo.samplerate / N;
 
         // Output results (you would typically use a plotting library to chart these)
         // std::cout << "Frequency: " << frequency_hz << " Hz | Magnitude: " << magnitude << std::endl;
@@ -173,7 +179,7 @@ void MainWindow::loadFile(const QString &fileName)
         }
     }
 
-    std::cout << "\nMax magnitude found: " << max_magnitude << std::endl;
+    std::cout << "Max magnitude found: " << max_magnitude << std::endl;
 
     fftw_destroy_plan(p);
     fftw_free(in);
@@ -181,14 +187,14 @@ void MainWindow::loadFile(const QString &fileName)
 
     QGuiApplication::restoreOverrideCursor();
 
+    // QString f_string = "frames: " + QString::number(sfInfo.frames) + "\n" +
+    //                    "samplerate: " + QString::number(sfInfo.samplerate) + "\n" +
+    //                    "channels: " + QString::number(sfInfo.channels) + "\n" +
+    //                    "format: 0x" + QString::number(sfInfo.format, 16) + "\n" +
+    //                    "sections: " + QString::number(sfInfo.sections) + "\n" +
+    //                    "seekable: " + QString::number(sfInfo.seekable) + "\n";
+    // QMessageBox::information(this, "Application", f_string);
     setCurrentFile(fileName);
-    QString f_string = "frames: " + QString::number(sfInfo.frames) + "\n" +
-                       "samplerate: " + QString::number(sfInfo.samplerate) + "\n" +
-                       "channels: " + QString::number(sfInfo.channels) + "\n" +
-                       "format: 0x" + QString::number(sfInfo.format, 16) + "\n" +
-                       "sections: " + QString::number(sfInfo.sections) + "\n" +
-                       "seekable: " + QString::number(sfInfo.seekable) + "\n";
-    QMessageBox::information(this, "Application", f_string);
     statusBar()->showMessage("File loaded", 2000);
 }
 
