@@ -1,4 +1,5 @@
 #include <QtWidgets>
+#include <iostream>
 
 #include "mainwindow.h"
 
@@ -14,12 +15,6 @@ MainWindow::MainWindow(QWidget * /* parent */)
 }
 
 MainWindow::~MainWindow() {
-    if (m_sndFile != NULL) {
-        // Close any previously opened file
-        sf_close(m_sndFile);
-        m_sndFile = NULL;
-        m_sfInfo = {0};
-    }
 }
 
 void MainWindow::open()
@@ -100,27 +95,93 @@ void MainWindow::loadFile(const QString &fileName)
     const char* c_filename = byteArray.constData();
     SNDFILE *sndFile = sf_open(c_filename, SFM_READ, &sfInfo);
     if (sndFile == NULL) {
-        QMessageBox::warning(this, "Application",
-            "Cannot read file " + fileName + ":\n" +
-            sf_strerror(NULL));
+        QMessageBox::warning(
+            this,
+            "Application",
+            "Cannot read file " + fileName +
+                ":\n" + sf_strerror(NULL));
+        return;
+    }
+    if ((sfInfo.channels != 1) &&
+        (sfInfo.channels != 2)) {
+        QMessageBox::warning(
+            this,
+            "Application",
+            "Unsupported number of channels: " +
+                QString::number(sfInfo.channels));
+        sf_close(sndFile);
         return;
     }
 
-    // QTextStream in(&file);
-    // QGuiApplication::setOverrideCursor(Qt::WaitCursor);
-    // // textEdit->setPlainText(in.readAll());
-    // QGuiApplication::restoreOverrideCursor();
+    QGuiApplication::setOverrideCursor(Qt::WaitCursor);
 
-    if (m_sndFile != NULL) {
-        // Close any previously opened file
-        sf_close(m_sndFile);
-        m_sndFile = NULL;
-        m_sfInfo = {0};
+    // Read all samples into a vector of floats
+    std::vector<float> raw_samples(sfInfo.frames * sfInfo.channels);
+    sf_read_float(sndFile, raw_samples.data(), sfInfo.frames * sfInfo.channels);
+    sf_close(sndFile);
+
+    // Convert from stereo to mono
+    std::vector<float> samples = std::vector<float>(sfInfo.frames);
+    for (unsigned i = 0; i < sfInfo.frames; i++) {
+        float sample = 0.0;
+        for (unsigned j = 0; j < sfInfo.channels; j++) {
+            sample += raw_samples[(i * sfInfo.channels) + j];
+        }
+        sample /= sfInfo.channels;
+        samples[i] = sample;
     }
-    m_sndFile = sndFile;
-    m_sfInfo = sfInfo;
-    setCurrentFile(fileName);
 
+    long N = samples.size();
+    std::cout << "Read " << N << " frames at " << sfInfo.samplerate << " Hz" << std::endl;
+
+    // FFTW works best with sizes that are products of small factors. The full file size might not be optimal,
+    // but we use it for simplicity here. In a real application, you might use an optimal size like 1024 or 2048.
+    // Ensure data is aligned for optimal performance.
+    fftw_complex* in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
+    fftw_complex* out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
+
+    // Convert float samples to fftw_complex input (real part only, imaginary part is 0)
+    for (unsigned i = 0; i < N; ++i) {
+        in[i][0] = samples[i];  // real part
+        in[i][1] = 0.0;         // imaginary part
+    }
+
+    // Create a plan for a forward, 1D DFT
+    fftw_plan p = fftw_plan_dft_1d(N, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+
+    // Execute the plan
+    fftw_execute(p);
+    std::cout << "\nFrequency Magnitudes (first " << N/2 << " bins):" << std::endl;
+
+    // The output array `out` contains complex frequency data. We calculate the magnitude
+    // (sqrt(real^2 + imag^2)).
+    // Note: for real input, the spectrum is symmetric, so we only need the first N/2 + 1 bins.
+    double max_magnitude = 0.0;
+    for (int i = 0; i < N / 2; ++i) {
+        double real = out[i][0];
+        double imag = out[i][1];
+        double magnitude = std::sqrt((real * real) + (imag * imag));
+
+        // The frequency for this bin (Hz)
+        double frequency_hz = (double)i * sfInfo.samplerate / N;
+
+        // Output results (you would typically use a plotting library to chart these)
+        // std::cout << "Frequency: " << frequency_hz << " Hz | Magnitude: " << magnitude << std::endl;
+
+        if (magnitude > max_magnitude) {
+            max_magnitude = magnitude;
+        }
+    }
+
+    std::cout << "\nMax magnitude found: " << max_magnitude << std::endl;
+
+    fftw_destroy_plan(p);
+    fftw_free(in);
+    fftw_free(out);
+
+    QGuiApplication::restoreOverrideCursor();
+
+    setCurrentFile(fileName);
     QString f_string = "frames: " + QString::number(sfInfo.frames) + "\n" +
                        "samplerate: " + QString::number(sfInfo.samplerate) + "\n" +
                        "channels: " + QString::number(sfInfo.channels) + "\n" +

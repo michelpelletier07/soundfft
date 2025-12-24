@@ -3,8 +3,9 @@
 
 #include <QMainWindow>
 
-#include <stdio.h>
+// #include <stdio.h>
 #include <sndfile.h>
+#include <fftw3.h>
 
 QT_BEGIN_NAMESPACE
 class QAction;
@@ -27,9 +28,6 @@ private slots:
     void about();
 
 private:
-    SNDFILE *m_sndFile = NULL;
-    SF_INFO m_sfInfo = {0};
-
     void createActions();
     void createStatusBar();
     void readSettings();
