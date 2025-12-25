@@ -1,5 +1,6 @@
 # Cmake builds
 build/
+builds/
 
 # C++ objects and libs
 *.slo
